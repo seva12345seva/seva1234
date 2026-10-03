@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ru" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraMarket — Современный маркетплейс</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body id="appBody" class="font-sans antialiased bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+            
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="resetFilters()">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-cube text-xl"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">AuraMarket</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400 font-medium">Маркетплейс без границ</span>
+                </div>
+            </div>
+
+            <!-- Search Bar in Header -->
+            <div class="flex-1 max-w-xl relative hidden md:block">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </span>
+                    <input type="text" id="searchInput" placeholder="Поиск товара, бренда или продавца (мин. 2 символа)..." 
+                        class="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-indigo-500 dark:focus:border-indigo-500 rounded-xl text-sm focus:outline-none transition-all shadow-inner"
+                        oninput="handleSearch(this.value)">
+                    <button id="clearSearchBtn" onclick="clearSearchInput()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+                <!-- Autocomplete Dropdown -->
+                <div id="autocompleteDropdown" class="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl hidden z-50 max-h-80 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Settings Button -->
+                <button onclick="openModal('settingsModal')" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors relative" title="Настройки темы и фона">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+
+                <!-- Favorites Button -->
+                <button onclick="toggleFavoritesTab()" id="favToggleBtn" class="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors relative" title="Избранное">
+                    <i class="fa-regular fa-heart text-lg"></i>
+                    <span id="favBadge" class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-xs font-bold rounded-full flex items-center justify-center hidden">0</span>
+                </button>
+
+                <!-- Sell Item Button (CTA) -->
+                <button onclick="openModal('addProductModal')" class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/25 transition-all transform active:scale-95 text-sm">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden sm:inline">Выставить товар</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Search bar below header on small screens -->
+        <div class="px-4 pb-3 md:hidden">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="searchInputMobile" placeholder="Поиск товаров..." 
+                    class="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-xl text-sm focus:outline-none"
+                    oninput="handleSearch(this.value)">
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="mb-8 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-violet-900 text-white p-6 sm:p-10 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-violet-600/30 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="relative z-10 max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-indigo-200 text-xs font-semibold mb-4">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> Быстрый маркетплейс в 2-3 клика
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Покупайте и продавайте легко</h1>
+                <p class="text-indigo-100 text-sm sm:text-base mb-6 leading-relaxed">
+                    Платформа нового поколения. Мгновенный поиск, надежные продавцы, быстрая покупка без лишних формальностей и удобная публикация ваших товаров за секунды.
+                </p>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="openModal('addProductModal')" class="px-5 py-3 bg-white text-indigo-900 font-semibold rounded-xl shadow-lg hover:bg-indigo-50 transition-all text-sm">
+                        <i class="fa-solid fa-plus-circle mr-2 text-indigo-600"></i> Разместить товар бесплатно
+                    </button>
+                    <button onclick="scrollToCatalog()" class="px-5 py-3 bg-indigo-700/60 hover:bg-indigo-700 text-white font-medium rounded-xl backdrop-blur-md transition-all text-sm border border-indigo-500/30">
+                        Смотреть каталог
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 relative z-10 w-full md:w-auto min-w-[260px]">
+                <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center">
+                    <div id="statTotalItems" class="text-2xl font-bold">0</div>
+                    <div class="text-xs text-indigo-200 mt-1">Товаров в каталоге</div>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-center">
+                    <div id="statTotalSellers" class="text-2xl font-bold">0</div>
+                    <div class="text-xs text-indigo-200 mt-1">Продавцов</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="catalogSection" class="space-y-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                
+                <!-- Category Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar" id="categoryContainer">
+                    <button onclick="filterCategory('all')" class="category-btn active px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-indigo-600 text-white shadow-md shadow-indigo-500/20">
+                        Все товары
+                    </button>
+                    <button onclick="filterCategory('Электроника')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                        Электроника
+                    </button>
+                    <button onclick="filterCategory('Одежда')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                        Одежда
+                    </button>
+                    <button onclick="filterCategory('Дом и сад')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                        Дом и сад
+                    </button>
+                    <button onclick="filterCategory('Спорт')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                        Спорт
+                    </button>
+                    <button onclick="filterCategory('Хобби')" class="category-btn px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                        Хобби и книги
+                    </button>
+                </div>
+
+                <!-- Sort & View Controls -->
+                <div class="flex items-center gap-3">
+                    <select id="sortSelect" onchange="sortProducts(this.value)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                        <option value="newest">Сначала новые</option>
+                        <option value="price-asc">Цена: по возрастанию</option>
+                        <option value="price-desc">Цена: по убыванию</option>
+                        <option value="rating">По рейтингу</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Active Filters / Search Indicator -->
+            <div id="activeFilterBanner" class="hidden flex items-center justify-between bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 px-4 py-3 rounded-2xl text-sm">
+                <div id="activeFilterText" class="text-indigo-900 dark:text-indigo-200 font-medium"></div>
+                <button onclick="resetFilters()" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline text-xs">Сбросить фильтр</button>
+            </div>
+
+            <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Products will be injected here via JavaScript -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-4 text-2xl">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-1">Товары не найдены</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mb-6">По вашему запросу или выбранной категории ничего не нашлось. Попробуйте изменить параметры поиска.</p>
+                <button onclick="resetFilters()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-all">Сбросить фильтры</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 dark:text-white">AuraMarket</span> &copy; 2026. Все права защищены.
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="#" onclick="openModal('settingsModal'); return false;" class="hover:underline">Настройки темы</a>
+                <a href="#" onclick="openModal('addProductModal'); return false;" class="hover:underline">Продать товар</a>
+                <a href="#" onclick="showHelpInfo(); return false;" class="hover:underline">Алгоритм покупки</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ================= MODAL WINDOWS ================= -->
+
+    <div id="addProductModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
+            <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold">Выставить товар на продажу</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Заполните простую форму за 2 клика</p>
+                </div>
+                <button onclick="closeModal('addProductModal')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="addProductForm" onsubmit="handlePublishProduct(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Название товара</label>
+                    <input type="text" id="newTitle" required placeholder="Например: Беспроводные наушники Sony" 
+                        class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Цена (грн / $)</label>
+                        <input type="number" id="newPrice" required min="1" placeholder="1500" 
+                            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Категория</label>
+                        <select id="newCategory" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                            <option value="Электроника">Электроника</option>
+                            <option value="Одежда">Одежда</option>
+                            <option value="Дом и сад">Дом и сад</option>
+                            <option value="Спорт">Спорт</option>
+                            <option value="Хобби">Хобби и книги</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Имя продавца</label>
+                    <input type="text" id="newSeller" required placeholder="Ваше имя или магазин" 
+                        class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Фото (Ссылка на картинку или пресет)</label>
+                    <input type="url" id="newImage" placeholder="https://images.unsplash.com/... (оставьте пустым для авто-картинки)" 
+                        class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Описание</label>
+                    <textarea id="newDesc" rows="3" required placeholder="Кратко опишите состояние и характеристики товара..." 
+                        class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeModal('addProductModal')" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Отмена</button>
+                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-500/30 transition-all">Опубликовать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="quickBuyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+            <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-indigo-600 text-white">
+                <div>
+                    <h3 class="text-lg font-bold">Быстрая покупка</h3>
+                    <p class="text-xs text-indigo-100">Оформление заказа в 1 клик</p>
+                </div>
+                <button onclick="closeModal('quickBuyModal')" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4" id="buyModalContent">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+            <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold">Настройки внешнего вида</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Персонализируйте свой интерфейс</p>
+                </div>
+                <button onclick="closeModal('settingsModal')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Theme Switcher -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Режим темы</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setTheme('light')" id="lightThemeBtn" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium transition-all hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-sun text-amber-500"></i> Светлая
+                        </button>
+                        <button onclick="setTheme('dark')" id="darkThemeBtn" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium transition-all hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <i class="fa-solid fa-moon text-indigo-400"></i> Темная
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Background Color Picker -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Цвет фона приложения</label>
+                    <div class="flex items-center gap-3 mb-3">
+                        <input type="color" id="bgColorPicker" onchange="changeCustomBackground(this.value)" value="#f8fafc" class="w-12 h-12 rounded-xl cursor-pointer border-0 bg-transparent">
+                        <div class="text-sm">
+                            <span class="font-medium">Выберите любой оттенок</span>
+                            <span class="block text-xs text-slate-500">Мгновенное применение цвета фона</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-5 gap-2">
+                        <button onclick="changeCustomBackground('#f8fafc')" class="h-9 rounded-xl bg-slate-50 border border-slate-200 shadow-sm" title="Светло-серый (По умолчанию)"></button>
+                        <button onclick="changeCustomBackground('#fef2f2')" class="h-9 rounded-xl bg-red-50 border border-red-200 shadow-sm" title="Нежно-красный"></button>
+                        <button onclick="changeCustomBackground('#f0fdf4')" class="h-9 rounded-xl bg-green-50 border border-green-200 shadow-sm" title="Нежно-зеленый"></button>
+                        <button onclick="changeCustomBackground('#eff6ff')" class="h-9 rounded-xl bg-blue-50 border border-blue-200 shadow-sm" title="Нежно-голубой"></button>
+                        <button onclick="changeCustomBackground('#090d16')" class="h-9 rounded-xl bg-slate-950 border border-slate-800 shadow-sm" title="Глубокий черный"></button>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                    <button onclick="resetDefaultSettings()" class="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Сбросить настройки фона</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm hidden p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
+            <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold">Алгоритм покупки и продажи</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Как это работает в 2-3 клика</p>
+                </div>
+                <button onclick="closeModal('helpModal')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0">1</div>
+                    <div>
+                        <h4 class="font-semibold text-slate-900 dark:text-white mb-0.5">Быстрый поиск</h4>
+                        <p class="text-xs">Введите название в строку поиска — система мгновенно выдаст совпадения, отфильтрует по категориям или цене.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0">2</div>
+                    <div>
+                        <h4 class="font-semibold text-slate-900 dark:text-white mb-0.5">Публикация в 2 клика</h4>
+                        <p class="text-xs">Нажмите «Выставить товар», заполните базовые поля и нажмите «Опубликовать». Товар сразу появится в общем каталоге.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0">3</div>
+                    <div>
+                        <h4 class="font-semibold text-slate-900 dark:text-white mb-0.5">Моментальная покупка</h4>
+                        <p class="text-xs">Нажмите «Купить в 1 клик», подтвердите заказ. Продавцу будет отправлено уведомление, а товар получит статус «Забронирован».</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button onclick="closeModal('helpModal')" class="px-5 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-all">Понятно</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-medium">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toastMessage">Успешное действие</span>
+        </div>
+    </div>
+
+    <script>
+        // Default Demo Data
+        const defaultProducts = [
+            {
+                id: 1,
+                title: "Смартфон Apple iPhone 15 Pro 256GB",
+                price: 42999,
+                category: "Электроника",
+                seller: "Alex Store",
+                rating: 4.9,
+                image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=600&q=80",
+                desc: "Новый флагман в идеальном состоянии. Полный комплект, гарантия 1 год.",
+                date: Date.now() - 100000
+            },
+            {
+                id: 2,
+                title: "Беспроводные наушники Sony WH-1000XM5",
+                price: 13500,
+                category: "Электроника",
+                seller: "AudioExpert",
+                rating: 4.8,
+                image: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80",
+                desc: "Лучшее активное шумоподавление на рынке. Звук потрясающего качества.",
+                date: Date.now() - 200000
+            },
+            {
+                id: 3,
+                title: "Стильное худи оверсайз Minimalist",
+                price: 1850,
+                category: "Одежда",
+                seller: "Urban Wear",
+                rating: 4.7,
+                image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80",
+                desc: "Плотный хлопок премиум качества. Унисекс модель.",
+                date: Date.now() - 300000
+            },
+            {
+                id: 4,
+                title: "Электрический гриль Tefal OptiGrill+",
+                price: 7400,
+                category: "Дом и сад",
+                seller: "HomeMarket",
+                rating: 4.9,
+                image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80",
+                desc: "Автоматический датчик приготовления мяса, рыбы и овощей.",
+                date: Date.now() - 400000
+            },
+            {
+                id: 5,
+                title: "Профессиональный велосипед Trek X-Caliber",
+                price: 24900,
+                category: "Спорт",
+                seller: "Velosport UA",
+                rating: 5.0,
+                image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=600&q=80",
+                desc: "Легкая алюминиевая рама, гидравлические тормоза Shimano.",
+                date: Date.now() - 500000
+            },
+            {
+                id: 6,
+                title: "Настольная игра «Эволюция. Новый мир»",
+                price: 980,
+                category: "Хобби",
+                seller: "Hobby World",
+                rating: 4.6,
+                image: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=600&q=80",
+                desc: "Увлекательная стратегия для компании от 2 до 4 игроков.",
+                date: Date.now() - 600000
+            }
+        ];
+
+        // State variables
+        let products = JSON.parse(localStorage.getItem('aura_products')) || defaultProducts;
+        let favorites = JSON.parse(localStorage.getItem('aura_favorites')) || [];
+        let currentCategory = 'all';
+        let searchQuery = '';
+        let activeTab = 'catalog'; // 'catalog' or 'favorites'
+        let currentSort = 'newest';
+
+        // Initialize application on load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            renderProducts();
+            updateStats();
+            updateFavBadge();
+        });
+
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            const emptyState = document.getElementById('emptyState');
+            grid.innerHTML = '';
+
+            let filtered = [...products];
+
+            // Filter by active tab (favorites vs catalog)
+            if (activeTab === 'favorites') {
+                filtered = filtered.filter(p => favorites.includes(p.id));
+            }
+
+            // Filter by category
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(p => p.category === currentCategory);
+            }
+
+            // Filter by search query
+            if (searchQuery.trim().length > 0) {
+                const q = searchQuery.toLowerCase();
+                filtered = filtered.filter(p => 
+                    p.title.toLowerCase().includes(q) || 
+                    p.category.toLowerCase().includes(q) || 
+                    p.seller.toLowerCase().includes(q) ||
+                    p.desc.toLowerCase().includes(q)
+                );
+            }
+
+            // Sort products
+            if (currentSort === 'newest') {
+                filtered.sort((a, b) => b.date - a.date);
+            } else if (currentSort === 'price-asc') {
+                filtered.sort((a, b) => a.price - b.price);
+            } else if (currentSort === 'price-desc') {
+                filtered.sort((a, b) => b.price - a.price);
+            } else if (currentSort === 'rating') {
+                filtered.sort((a, b) => b.rating - a.rating);
+            }
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                grid.classList.add('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                grid.classList.remove('hidden');
+            }
+
+            filtered.forEach(product => {
+                const isFav = favorites.includes(product.id);
+                const card = document.createElement('div');
+                card.className = "group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div class="relative overflow-hidden bg-slate-100 dark:bg-slate-800 aspect-square">
+                        <img src="${product.image}" alt="${product.title}" 
+                            onerror="this.src='https://placehold.co/400x400/e2e8f0/475569?text=AuraMarket'"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        
+                        <div class="absolute top-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold shadow-md">
+                            ${product.category}
+                        </div>
+
+                        <button onclick="toggleFavorite(${product.id})" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:scale-110 transition-transform">
+                            <i class="${isFav ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-5 flex flex-col flex-1 justify-between gap-4">
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                                <span><i class="fa-solid fa-user-tag mr-1"></i>${product.seller}</span>
+                                <span class="flex items-center gap-1 font-semibold text-amber-500"><i class="fa-solid fa-star"></i>${product.rating}</span>
+                            </div>
+                            <h3 class="font-bold text-base leading-snug text-slate-900 dark:text-white line-clamp-2 mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">${product.title}</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">${product.desc}</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                            <div>
+                                <span class="text-xs text-slate-400 block">Цена</span>
+                                <span class="text-lg font-extrabold text-slate-900 dark:text-white">${product.price.toLocaleString()} ₴</span>
+                            </div>
+                            <button onclick="openQuickBuy(${product.id})" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-500/20 transition-all">
+                                Купить в 1 клик
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function handleSearch(val) {
+            searchQuery = val;
+            const clearBtn = document.getElementById('clearSearchBtn');
+            const dropdown = document.getElementById('autocompleteDropdown');
+
+            if (val.trim().length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+                dropdown.classList.add('hidden');
+            }
+
+            // Sync both search inputs (desktop & mobile)
+            document.getElementById('searchInput').value = val;
+            document.getElementById('searchInputMobile').value = val;
+
+            // Generate autocomplete suggestions if query >= 2 chars
+            if (val.trim().length >= 2) {
+                const matches = products.filter(p => 
+                    p.title.toLowerCase().includes(val.toLowerCase()) || 
+                    p.category.toLowerCase().includes(val.toLowerCase())
+                ).slice(0, 5);
+
+                if (matches.length > 0) {
+                    dropdown.innerHTML = matches.map(m => `
+                        <div onclick="selectAutocomplete('${m.title}')" class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between border-b border-slate-100 dark:border-slate-800 last:border-0">
+                            <div class="flex items-center gap-3">
+                                <img src="${m.image}" class="w-10 h-10 object-cover rounded-lg" onerror="this.src='https://placehold.co/40x400'">
+                                <div>
+                                    <div class="text-sm font-semibold line-clamp-1">${m.title}</div>
+                                    <div class="text-xs text-slate-400">${m.category} • ${m.price} ₴</div>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-arrow-right text-xs text-slate-400"></i>
+                        </div>
+                    `).join('');
+                    dropdown.classList.remove('hidden');
+                } else {
+                    dropdown.classList.add('hidden');
+                }
+            } else {
+                dropdown.classList.add('hidden');
+            }
+
+            renderProducts();
+            updateFilterBanner();
+        }
+
+        function selectAutocomplete(title) {
+            searchQuery = title;
+            document.getElementById('searchInput').value = title;
+            document.getElementById('searchInputMobile').value = title;
+            document.getElementById('autocompleteDropdown').classList.add('hidden');
+            renderProducts();
+            updateFilterBanner();
+        }
+
+        function clearSearchInput() {
+            searchQuery = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchInputMobile').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            document.getElementById('autocompleteDropdown').classList.add('hidden');
+            renderProducts();
+            updateFilterBanner();
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            activeTab = 'catalog';
+            
+            // Update buttons active state
+            document.querySelectorAll('#categoryContainer button').forEach(btn => {
+                if (btn.textContent.trim().toLowerCase().includes(cat.toLowerCase()) || (cat === 'all' && btn.textContent.includes('Все'))) {
+                    btn.className = "category-btn active px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-indigo-600 text-white shadow-md shadow-indigo-500/20";
+                } else {
+                    btn.className = "category-btn px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800";
+                }
+            });
+
+            renderProducts();
+            updateFilterBanner();
+        }
+
+        function sortProducts(sortType) {
+            currentSort = sortType;
+            renderProducts();
+        }
+
+        function updateFilterBanner() {
+            const banner = document.getElementById('activeFilterBanner');
+            const text = document.getElementById('activeFilterText');
+            if (currentCategory !== 'all' || searchQuery.length > 0) {
+                banner.classList.remove('hidden');
+                text.innerHTML = `Фильтр: <b>${currentCategory !== 'all' ? currentCategory : 'Все'}</b> ${searchQuery ? `• Запрос: «${searchQuery}»` : ''}`;
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function resetFilters() {
+            currentCategory = 'all';
+            searchQuery = '';
+            activeTab = 'catalog';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchInputMobile').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            filterCategory('all');
+        }
+
+        function handlePublishProduct(e) {
+            e.preventDefault();
+            const title = document.getElementById('newTitle').value.trim();
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const category = document.getElementById('newCategory').value;
+            const seller = document.getElementById('newSeller').value.trim();
+            const imageInput = document.getElementById('newImage').value.trim();
+            const desc = document.getElementById('newDesc').value.trim();
+
+            // Default fallback image depending on category
+            let image = imageInput;
+            if (!image) {
+                if (category === 'Электроника') image = 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=600&q=80';
+                else if (category === 'Одежда') image = 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=600&q=80';
+                else if (category === 'Дом и сад') image = 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80';
+                else if (category === 'Спорт') image = 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=600&q=80';
+                else image = 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80';
+            }
+
+            const newProduct = {
+                id: Date.now(),
+                title,
+                price,
+                category,
+                seller,
+                rating: 5.0,
+                image,
+                desc,
+                date: Date.now()
+            };
+
+            products.unshift(newProduct);
+            localStorage.setItem('aura_products', JSON.stringify(products));
+
+            closeModal('addProductModal');
+            document.getElementById('addProductForm').reset();
+            renderProducts();
+            updateStats();
+            showToast('Товар успешно опубликован в каталоге!', 'success');
+        }
+
+        function openQuickBuy(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            const modalContent = document.getElementById('buyModalContent');
+            modalContent.innerHTML = `
+                <div class="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl mb-2">
+                    <img src="${product.image}" class="w-16 h-16 object-cover rounded-xl">
+                    <div>
+                        <h4 class="font-bold text-sm line-clamp-1">${product.title}</h4>
+                        <div class="text-xs text-slate-500 mt-0.5">Продавец: ${product.seller}</div>
+                        <div class="text-base font-extrabold text-indigo-600 dark:text-indigo-400 mt-1">${product.price.toLocaleString()} ₴</div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Ваше имя</label>
+                        <input type="text" id="buyerName" placeholder="Введите имя" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Телефон для связи</label>
+                        <input type="tel" id="buyerPhone" placeholder="+38 (067) 000-00-00" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
+                    </div>
+                </div>
+
+                <div class="pt-3">
+                    <button onclick="confirmPurchase('${product.title}', '${product.seller}')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all text-sm">
+                        Подтвердить заказ
+                    </button>
+                    <p class="text-[11px] text-center text-slate-400 mt-2">Продавец получит уведомление и свяжется с вами в течение 10 минут.</p>
+                </div>
+            `;
+            openModal('quickBuyModal');
+        }
+
+        function confirmPurchase(title, seller) {
+            const nameInput = document.getElementById('buyerName').value;
+            const phoneInput = document.getElementById('buyerPhone').value;
+            if(!nameInput || !phoneInput) {
+                showToast('Пожалуйста, заполните имя и телефон', 'error');
+                return;
+            }
+            closeModal('quickBuyModal');
+            showToast(`Заказ оформлен! Продавец ${seller} уведомлен.`, 'success');
+        }
+
+        function toggleFavorite(id) {
+            if (favorites.includes(id)) {
+                favorites = favorites.filter(favId => favId !== id);
+                showToast('Товар удален из избранного', 'info');
+            } else {
+                favorites.push(id);
+                showToast('Товар добавлен в избранное', 'success');
+            }
+            localStorage.setItem('aura_favorites', JSON.stringify(favorites));
+            updateFavBadge();
+            renderProducts();
+        }
+
+        function toggleFavoritesTab() {
+            if (activeTab === 'favorites') {
+                activeTab = 'catalog';
+                document.getElementById('favToggleBtn').classList.remove('bg-rose-50', 'dark:bg-rose-950/40', 'text-rose-500');
+            } else {
+                activeTab = 'favorites';
+                document.getElementById('favToggleBtn').classList.add('bg-rose-50', 'dark:bg-rose-950/40', 'text-rose-500');
+            }
+            renderProducts();
+        }
+
+        function updateFavBadge() {
+            const badge = document.getElementById('favBadge');
+            if (favorites.length > 0) {
+                badge.textContent = favorites.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('statTotalItems').textContent = products.length;
+            const uniqueSellers = new Set(products.map(p => p.seller)).size;
+            document.getElementById('statTotalSellers').textContent = uniqueSellers;
+        }
+
+        function setTheme(theme) {
+            const htmlEl = document.documentElement;
+            if (theme === 'dark') {
+                htmlEl.classList.add('dark');
+                localStorage.setItem('aura_theme', 'dark');
+            } else {
+                htmlEl.classList.remove('dark');
+                localStorage.setItem('aura_theme', 'light');
+            }
+            loadSettings();
+        }
+
+        function changeCustomBackground(color) {
+            const body = document.getElementById('appBody');
+            body.style.backgroundColor = color;
+            localStorage.setItem('aura_bgcolor', color);
+            document.getElementById('bgColorPicker').value = color;
+        }
+
+        function resetDefaultSettings() {
+            localStorage.removeItem('aura_bgcolor');
+            document.getElementById('appBody').style.backgroundColor = '';
+            document.getElementById('bgColorPicker').value = '#f8fafc';
+            showToast('Настройки фона сброшены', 'info');
+        }
+
+        function loadSettings() {
+            const savedTheme = localStorage.getItem('aura_theme');
+            const htmlEl = document.documentElement;
+            if (savedTheme === 'dark') {
+                htmlEl.classList.add('dark');
+            } else if (savedTheme === 'light') {
+                htmlEl.classList.remove('dark');
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                htmlEl.classList.add('dark');
+            }
+
+            const savedBg = localStorage.getItem('aura_bgcolor');
+            if (savedBg) {
+                document.getElementById('appBody').style.backgroundColor = savedBg;
+                document.getElementById('bgColorPicker').value = savedBg;
+            }
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function scrollToCatalog() {
+            document.getElementById('catalogSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showHelpInfo() {
+            openModal('helpModal');
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.textContent = message;
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            } else if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-rose-400';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-sky-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
