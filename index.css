@@ -1,0 +1,42 @@
+body {
+    font-family: Arial, sans-serif;
+    color: #222;
+    line-height: 1.6;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+h1 {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+}
+
+h2 {
+    font-size: 1.2rem;
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
+
+p {
+    margin-bottom: 15px;
+}
+
+/* Общий класс для блоков с формулами (красные блоки на скриншоте) */
+.formula {
+    background-color: #f2dede;
+    color: #a94442;
+    text-align: center;
+    padding: 8px;
+    margin: 15px auto;
+    max-width: 350px;
+    font-weight: bold;
+    border-radius: 4px;
+}
+
+/* Выделение букв-переменных курсивом и красным цветом */
+.variable {
+    font-style: italic;
+    color: #a94442;
+}
