@@ -1,42 +1,45 @@
 body {
+    background-color: #f5f5f5;
     font-family: Arial, sans-serif;
-    color: #222;
-    line-height: 1.6;
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 0 20px;
+    color: #333333;
+}
+
+.container {
+    background-color: #ffffff;
+    width: 700px;
+    margin: 30px auto;
+    padding: 40px;
 }
 
 h1 {
     text-align: center;
-    font-size: 1.8rem;
+    font-size: 24px;
     margin-bottom: 30px;
 }
 
 h2 {
-    font-size: 1.2rem;
-    margin-top: 30px;
-    margin-bottom: 10px;
-}
-
-p {
+    font-size: 16px;
+    margin-top: 25px;
     margin-bottom: 15px;
 }
 
-/* Общий класс для блоков с формулами (красные блоки на скриншоте) */
+p {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
 .formula {
-    background-color: #f2dede;
-    color: #a94442;
+    background-color: #ffcccc;
+    color: #b30000;
     text-align: center;
-    padding: 8px;
-    margin: 15px auto;
-    max-width: 350px;
-    font-weight: bold;
+    padding: 10px;
+    margin: 15px 0;
+    font-size: 18px;
     border-radius: 4px;
 }
 
-/* Выделение букв-переменных курсивом и красным цветом */
-.variable {
+.highlight {
+    color: #b30000;
+    font-weight: bold;
     font-style: italic;
-    color: #a94442;
 }
